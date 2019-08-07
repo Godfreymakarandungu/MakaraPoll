@@ -1,0 +1,106 @@
+version: 2 
+
+jobs:
+  test:
+    working_directory: ~/MAKARApolls
+    docker:
+      - image: circleci/python:3
+    environment:
+    - ANSIBLE_HOST_KEY_CHECKING: false
+    steps:
+  
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install --upgrade setuptools
+            sudo apt-get install python3-venv
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install tox
+            pip install -r requirements.txt
+      - save_cache: # cache Python dependencies
+          key: deps9-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - ".venv"
+            - "/usr/local/bin"
+            - "/usr/local/lib/python3.6/site-packages"
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            tox
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: htmlcov
+  
+  publish:
+    docker:
+      - image: circleci/python:3
+    steps:
+      - checkout
+      -  run:
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+      - run:
+          name: init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = godii" >> ~/.pypirc
+            echo -e "password = $password" >> ~/.pypirc
+
+      - run:
+          name: create packages
+          command: |
+            python setup.py sdist
+      - run:
+          name: upload to pypi
+          command: |
+            python3 -m venv  venv
+             . venv/bin/activate
+             
+             pip3 install --upgrade pip
+            pip3 install twine
+            twine upload dist/*  --skip-existing
+  
+  deploy:
+    docker:
+      - image: circleci/python:3.6.8
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - $KEY
+      - checkout
+      - run:
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install ansible
+      - run:
+          name: run playbook
+          command: |
+           . venv/bin/activate
+           ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook ansible/makarablog.yml -i ansible/hosts.ini --become
+           
+            
+workflows:
+  version: 2
+  test-publish-and-deploy:
+    jobs:
+      - test
+      - publish:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master            

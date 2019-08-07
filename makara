@@ -1,0 +1,15 @@
+server {
+    listen 80 ;    
+    server_name pollsmamakra.duckdns.org  www.pollsmamakra.duckdns.org ;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    location /static/ {
+            root home/godfrey/MakaraPoll/MakaraPoll;
+    }
+
+    location / {
+            include proxy_params;
+            proxy_pass http://unix:home/godfrey/MakaraPoll/MakaraPoll/makarablog.sock;
+    }
+}
