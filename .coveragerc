@@ -1,0 +1,16 @@
+[run]
+omit = /home/godfry/Documents/venv/*
+        wsgi.py
+       .tox/*
+       setup.py
+       manage.py
+       __init__.py
+       __init__.py                            
+	conftest.py                            
+	docs/__init__.py                       
+	docs/settings.py                      
+	docs/test_settings.py                  
+	docs/urls.py                        
+	docs/wsgi.py                            
+	manage.py                             
+
